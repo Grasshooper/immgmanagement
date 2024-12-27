@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  LEGAL_STAFF
+  LEGAL_ADMIN
+  SUPER_ADMIN
+}
+
+enum CaseStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ADDITIONAL_INFO_NEEDED
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String    @unique
+  role          UserRole  @default(USER)
+  firstName     String
+  lastName      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  cases         Case[]    @relation("UserCases")
+  assignedCases Case[]    @relation("AssignedCases")
+  messages      Message[]
+}
+
+model Case {
+  id              String     @id @default(cuid())
+  title           String
+  description     String
+  status          CaseStatus @default(DRAFT)
+  applicantId     String
+  assignedStaffId String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  documents       Document[]
+  messages        Message[]
+  applicant       User       @relation("UserCases", fields: [applicantId], references: [id])
+  assignedStaff   User?      @relation("AssignedCases", fields: [assignedStaffId], references: [id])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  fileUrl   String
+  fileKey   String
+  caseId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  case      Case     @relation(fields: [caseId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  caseId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  case      Case     @relation(fields: [caseId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
